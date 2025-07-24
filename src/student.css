@@ -1,0 +1,139 @@
+/* === General Page Styling === */
+body, html {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f8fafc;
+  color: #1f2937;
+  margin: 0;
+  padding: 0;
+}
+
+/* === Dashboard Container === */
+.student-dashboard {
+  padding: 2rem;
+  max-width: 960px;
+  margin: auto;
+  animation: fadeIn 0.6s ease-in;
+}
+
+/* === Header === */
+.student-dashboard h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  animation: slideIn 0.5s ease-in;
+}
+
+.student-dashboard p {
+  font-size: 1.1rem;
+  color: #64748b;
+  margin-bottom: 2rem;
+}
+
+/* === Course Cards === */
+.course-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+.course-card h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.2rem;
+}
+
+.course-card p {
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+/* === Sections === */
+.announcements, .lectures {
+  margin-top: 1.2rem;
+}
+
+.announcements h3, .lectures h3 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* === List Items === */
+ul.list-disc li {
+  margin-bottom: 0.5rem;
+  padding-left: 0.2rem;
+  transition: background-color 0.2s ease;
+  border-radius: 6px;
+}
+
+ul.list-disc li:hover {
+  background-color: #f3f4f6;
+}
+
+/* === Buttons === */
+button {
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+button.text-blue-600 {
+  color: #2563eb;
+  background-color: transparent;
+}
+
+button.text-blue-600:hover {
+  text-decoration: underline;
+  color: #1d4ed8;
+}
+
+button.fullscreen-btn {
+  margin-top: 0.5rem;
+  background-color: #334155;
+  color: white;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem;
+}
+
+button.fullscreen-btn:hover {
+  background-color: #1e293b;
+}
+
+/* === Video Preview === */
+video {
+  margin-top: 0.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease;
+}
+
+video:hover {
+  transform: scale(1.01);
+}
+
+/* === Error Message === */
+.text-red-500 {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* === Animations === */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  0%   { opacity: 0; transform: translateX(-15px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
