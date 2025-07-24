@@ -29,7 +29,12 @@ body, .admin-dashboard {
   min-height: 100vh;
   animation: pageLoad 1.2s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
-  overflow-x: hidden;
+
+  /* 👇 REMOVE THIS */
+  /* overflow-x: hidden; */
+
+  /* ✅ ADD THIS */
+  overflow-x: auto;
 }
 
 body::before {
