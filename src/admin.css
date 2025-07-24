@@ -775,3 +775,46 @@ select:focus-visible {
     border: 2px solid white;
   }
 }
+/* ✅ Horizontal Scroll Fixes */
+
+.table-container {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
+  display: block;
+}
+
+table {
+  width: 100%;
+  min-width: 800px; /* ✅ Force horizontal scroll for wide data */
+  border-collapse: collapse;
+}
+
+thead th, td {
+  white-space: nowrap;      /* ✅ Prevent line wrap */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ✅ On very small screens, allow full horizontal scroll */
+@media (max-width: 768px) {
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 800px; /* enough for users, passwords, course teachers */
+  }
+}
+
+/* ✅ Make sure section doesn't clip overflow */
+section {
+  overflow-x: auto !important;
+}
+
+/* ✅ Optional: If you want the whole body to scroll horizontally */
+body, .admin-dashboard {
+  overflow-x: auto !important;
+}
