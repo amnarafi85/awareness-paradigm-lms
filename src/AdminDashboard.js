@@ -271,6 +271,7 @@ const AdminDashboard = () => {
 
       <section>
         <h2>Bulk Upload Users via CSV</h2>
+          <h3>(name,email,role(student/teacher/admin))</h3>
         <input type="file" accept=".csv" onChange={handleCsvUpload} />
         <button onClick={processCsv}>Upload CSV</button>
       </section>
