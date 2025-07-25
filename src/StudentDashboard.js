@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
-// import './student.css';
 import { supabase } from "./supabaseClient";
-
+import { useNavigate } from "react-router-dom";
 const StudentDashboard = () => {
   const [user, setUser] = useState(null);
   const [userName, setUserName] = useState("");
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [courseDetails, setCourseDetails] = useState([]);
   const [previewedLectures, setPreviewedLectures] = useState([]);
-
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchUserAndEnrollments = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -116,88 +116,121 @@ const StudentDashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login"); 
+  };
+
+  const randomColor = () => {
+    const colors = ["#fef3c7", "#d1fae5", "#e0f2fe", "#fde68a", "#fcd34d", "#fca5a5"];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+
+  const selectedCourse = courseDetails.find(c => c.id === selectedCourseId);
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
         <h1>🎓 Student Dashboard</h1>
         <h2 className="welcome-message">Welcome, {userName || user?.email || "Loading..."}</h2>
+        <button onClick={handleLogout} className="logout-button">Logout</button>
       </header>
 
-      {enrolledCourses.length === 0 ? (
-        <p className="no-course-message">You are not enrolled in any course.</p>
-      ) : (
-        courseDetails.map((course) => (
-          <section key={course.id} className="course-card">
-            <div className="course-header">
-              <h3 className="course-title">📘 {course.title}</h3>
-              <p className="course-instructors">
-                Instructor(s):{" "}
-                {course.teachers.map(t => t?.email || "Unknown").join(", ")}
-              </p>
-            </div>
-
-            <div className="course-section">
-              <h4>📢 Announcements</h4>
-              {course.announcements.length > 0 ? (
-                <ul className="announcement-list">
-                  {course.announcements.map((a) => (
-                    <li key={a.id} className="announcement-item">
-                      {a.content}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="empty-note">No announcements yet.</p>
-              )}
-            </div>
-
-            <div className="course-section">
-              <h4>🎥 Lectures</h4>
-              {course.lectures.length > 0 ? (
-                <ul className="lecture-list">
-                  {course.lectures.map((lec) => {
-                    const embedUrl = getDriveEmbedUrl(lec.video_url);
-                    return (
-                      <li key={lec.id} className="lecture-item">
-                        <div className="lecture-title">
-                          {lec.title}
-                          <button
-                            onClick={() => togglePreview(lec.id)}
-                            className="preview-btn"
-                          >
-                            {previewedLectures.includes(lec.id)
-                              ? "Hide Preview"
-                              : "Preview"}
-                          </button>
-                        </div>
-
-                        {previewedLectures.includes(lec.id) && embedUrl && (
-                          <div className="lecture-preview">
-                            <iframe
-                              src={embedUrl}
-                              width="420"
-                              height="240"
-                              allow="autoplay"
-                              sandbox="allow-scripts allow-same-origin"
-                              allowFullScreen
-                              title={`lecture-${lec.id}`}
-                              className="lecture-iframe"
-                            ></iframe>
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="empty-note">
-                  No lectures available or you do not have access.
-                </p>
-              )}
-            </div>
-          </section>
-        ))
+      {courseDetails.length > 0 && (
+        <div className="course-selector">
+          <label>Select a Course:</label>
+          <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)}>
+            <option value="">-- Select --</option>
+            {courseDetails.map((c) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
+        </div>
       )}
+
+      {!selectedCourseId ? (
+        <p className="no-course-message">Please select a course to view details.</p>
+      ) : selectedCourse ? (
+        <section key={selectedCourse.id} className="course-card">
+          <div className="course-header">
+            <h3 className="course-title">📘 {selectedCourse.title}</h3>
+            <p className="course-instructors">
+              Instructor(s):{" "}
+              {selectedCourse.teachers.map(t => t?.email || "Unknown").join(", ")}
+            </p>
+          </div>
+
+          <div className="course-section">
+            <h4>📢 Announcements</h4>
+            {selectedCourse.announcements.length > 0 ? (
+              <ul className="announcement-list">
+                {selectedCourse.announcements.map((a) => (
+                  <li
+                    key={a.id}
+                    className="announcement-item"
+                    style={{
+                      backgroundColor: randomColor(),
+                      padding: "12px",
+                      borderRadius: "8px",
+                      marginBottom: "8px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    {a.content}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty-note">No announcements yet.</p>
+            )}
+          </div>
+
+          <div className="course-section">
+            <h4>🎥 Lectures</h4>
+            {selectedCourse.lectures.length > 0 ? (
+              <ul className="lecture-list">
+                {selectedCourse.lectures.map((lec) => {
+                  const embedUrl = getDriveEmbedUrl(lec.video_url);
+                  return (
+                    <li key={lec.id} className="lecture-item">
+                      <div className="lecture-title">
+                        {lec.title}
+                        <button
+                          onClick={() => togglePreview(lec.id)}
+                          className="preview-btn"
+                        >
+                          {previewedLectures.includes(lec.id)
+                            ? "Hide Preview"
+                            : "Preview"}
+                        </button>
+                      </div>
+
+                      {previewedLectures.includes(lec.id) && embedUrl && (
+                        <div className="lecture-preview">
+                          <iframe
+                            src={embedUrl}
+                            width="420"
+                            height="240"
+                            allow="autoplay"
+                            sandbox="allow-scripts allow-same-origin"
+                            allowFullScreen
+                            title={`lecture-${lec.id}`}
+                            className="lecture-iframe"
+                          ></iframe>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="empty-note">
+                No lectures available or you do not have access.
+              </p>
+            )}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 };

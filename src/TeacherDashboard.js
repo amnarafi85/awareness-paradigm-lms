@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
-// import "./teacher.css";
+import { useNavigate } from "react-router-dom";
 
 const TeacherDashboard = () => {
   const [user, setUser] = useState(null);
@@ -18,6 +18,13 @@ const TeacherDashboard = () => {
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [enrollMessage, setEnrollMessage] = useState("");
   const [editState, setEditState] = useState({});
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login");
+  };
 
   useEffect(() => {
     const fetchUserAndData = async () => {
@@ -268,7 +275,10 @@ const TeacherDashboard = () => {
 
   return (
     <div className="dashboard-container">
-      <h1 className="dashboard-title">Welcome, {user?.name}</h1>
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">Welcome, {user?.name}</h1>
+        <button className="logout-btn" onClick={handleLogout}>Logout</button>
+      </div>
 
       <section className="dashboard-section">
         <label>Select Course</label>
@@ -325,7 +335,7 @@ const TeacherDashboard = () => {
             </ul>
           </section>
 
-          {/* Enrolled Students */}
+          {/* Manage Students */}
           <section className="dashboard-section">
             <h2>Manage Students</h2>
             <ul>
@@ -376,18 +386,30 @@ const TeacherDashboard = () => {
 
                 <div>
                   <h4>Access Control</h4>
-                  {enrolledStudents.map((s) => (
-                    <label key={s.id}>
-                      <input
-                        type="checkbox"
-                        checked={lectureAccessMap[lec.id]?.[s.id] ?? false}
-                        onChange={(e) =>
-                          handleAccessToggle(lec.id, s.id, e.target.checked)
-                        }
-                      />
-                      {s.name} ({s.email})
-                    </label>
-                  ))}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                    {enrolledStudents.map((s) => (
+                      <label
+                        key={s.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          border: "1px solid #ccc",
+                          padding: "6px",
+                          borderRadius: "6px",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={lectureAccessMap[lec.id]?.[s.id] ?? false}
+                          onChange={(e) =>
+                            handleAccessToggle(lec.id, s.id, e.target.checked)
+                          }
+                        />
+                        <span>{s.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}

@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import { supabase } from './supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import './login.css';
+import loginIcon from './image.png'; // ✅ Import your image here
 
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isRedirecting, setIsRedirecting] = useState(false);
-
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    setIsRedirecting(true); // Start visual transition
+    setIsRedirecting(true);
 
     const { data, error: loginError } = await supabase.auth.signInWithPassword({
       email,
@@ -61,7 +61,6 @@ function LoginPage() {
       return;
     }
 
-    // Redirect to the correct dashboard
     if (role === 'admin') navigate('/admin-dashboard');
     else if (role === 'teacher') navigate('/teacher-dashboard');
     else if (role === 'student') navigate('/student-dashboard');
@@ -79,10 +78,12 @@ function LoginPage() {
 
       <div className={`login-card ${isRedirecting ? 'login-card-loading' : ''}`}>
         <div className="login-header">
-          <div className="login-icon">🧠</div>
+          <div className="login-icon">
+            <img src={loginIcon} alt="Login Icon" style={{ width: '90px', height: '90px', borderRadius: '50%' }} />
+          </div>
           <h1 className="login-title">Awareness Paradigm</h1>
           <p className="login-subtitle">
-            Transform your inner world through mindfulness
+            Transform your inner world through self-awareness
           </p>
         </div>
 
@@ -113,7 +114,7 @@ function LoginPage() {
         {error && <div className="login-error">{error}</div>}
 
         <div className="login-footer">
-          Your journey to mindfulness starts here ✨
+          Your journey to self-awarenesss starts here ✨
         </div>
       </div>
     </div>

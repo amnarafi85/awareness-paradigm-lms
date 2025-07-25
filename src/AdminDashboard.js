@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
-
 import Papa from 'papaparse';
 import './admin.css';
-
 
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL,
   process.env.REACT_APP_SUPABASE_ANON_KEY
 );
+
 function generateRandomPassword(length = 10) {
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
   let password = '';
@@ -20,6 +20,7 @@ function generateRandomPassword(length = 10) {
 }
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'student' });
@@ -32,6 +33,11 @@ const AdminDashboard = () => {
     fetchUsers();
     fetchCourses();
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
 
   const fetchUsers = async () => {
     const { data } = await supabase.from('users').select('*');
@@ -51,7 +57,6 @@ const AdminDashboard = () => {
         )
       `)
       .order('title', { ascending: true });
-
     setCourses(data || []);
   };
 
@@ -73,7 +78,6 @@ const AdminDashboard = () => {
       email_confirm: true,
       user_metadata: { full_name: newUser.name, role: newUser.role },
     });
-
     if (authError) {
       alert('Auth creation failed: ' + authError.message);
       return;
@@ -86,12 +90,14 @@ const AdminDashboard = () => {
       role: newUser.role,
       plaintext_password: password,
       is_blocked: false,
+      blocked_until: null,
     };
     const { error: dbError } = await supabase.from('users').insert(userData);
     if (dbError) {
       alert('Database insertion failed: ' + dbError.message);
       return;
     }
+
     setCredentials({ email: newUser.email, password });
     fetchUsers();
   };
@@ -106,10 +112,7 @@ const AdminDashboard = () => {
       header: true,
       complete: async (results) => {
         for (const row of results.data) {
-          const name = row.name;
-          const email = row.email;
-          const role = row.role;
-
+          const { name, email, role } = row;
           const { data: existing } = await supabase
             .from('users')
             .select('id')
@@ -125,13 +128,14 @@ const AdminDashboard = () => {
           });
           if (authError || !authUser) continue;
 
-          const { error: dbError } = await supabase.from('users').insert({
+          await supabase.from('users').insert({
             id: authUser.user.id,
             name,
             email,
             role,
             plaintext_password: password,
-            is_blocked: false
+            is_blocked: false,
+            blocked_until: null,
           });
         }
         fetchUsers();
@@ -156,7 +160,6 @@ const AdminDashboard = () => {
       .insert({ title: newCourse.title, description: newCourse.description })
       .select()
       .single();
-
     if (courseError) {
       alert(courseError.message);
       return;
@@ -166,15 +169,12 @@ const AdminDashboard = () => {
       course_id: insertedCourse.id,
       teacher_id,
     }));
-
     const { error: teacherLinkError } = await supabase
       .from('course_teachers')
       .insert(teacherRows);
-
     if (teacherLinkError) {
       alert('Course created but assigning teachers failed: ' + teacherLinkError.message);
     }
-
     fetchCourses();
   };
 
@@ -195,17 +195,31 @@ const AdminDashboard = () => {
     else alert(error.message);
   };
 
-  const toggleBlockUser = async (id, isBlocked) => {
-    const { error: dbError } = await supabase.from('users').update({ is_blocked: !isBlocked }).eq('id', id);
-    if (dbError) {
-      alert(dbError.message);
-      return;
-    }
-    const { error: authError } = await supabase.auth.admin.updateUserById(id, {
-      banned: !isBlocked,
-    });
-    if (authError) {
-      alert('Failed to update Auth status: ' + authError.message);
+  const toggleBlockUser = async (id, isBlocked, blockedUntil) => {
+    if (isBlocked) {
+      const confirmUnblock = window.confirm("Do you want to unblock this user manually?");
+      if (!confirmUnblock) return;
+
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({ is_blocked: false, blocked_until: null })
+        .eq('id', id);
+      if (dbError) return alert(dbError.message);
+
+      await supabase.auth.admin.updateUserById(id, { banned: false });
+    } else {
+      const duration = window.prompt("Enter block duration in days (1-60):", "15");
+      const days = parseInt(duration, 10);
+      if (isNaN(days) || days < 1 || days > 60) return alert("Invalid duration. Use a number between 1 and 60.");
+
+      const until = new Date(Date.now() + days * 86400000).toISOString();
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({ is_blocked: true, blocked_until: until })
+        .eq('id', id);
+      if (dbError) return alert(dbError.message);
+
+      await supabase.auth.admin.updateUserById(id, { banned: true });
     }
     fetchUsers();
   };
@@ -227,7 +241,14 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
-      <h1>Admin Dashboard</h1>
+      <div className="dashboard-header" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <h1>Admin Dashboard</h1>
+        <button
+          onClick={handleLogout}
+          style={{ padding:'8px 12px', background:'#e53e3e', color:'#fff', border:'none', borderRadius:'4px', cursor:'pointer' }}>
+          Logout
+        </button>
+      </div>
 
       <section>
         <h2>Create User</h2>
@@ -259,17 +280,11 @@ const AdminDashboard = () => {
         <input placeholder="Title" onChange={e => setNewCourse({ ...newCourse, title: e.target.value })} />
         <input placeholder="Description" onChange={e => setNewCourse({ ...newCourse, description: e.target.value })} />
         <Select
-  isMulti
-  options={users.filter(u => u.role === 'teacher').map(t => ({
-    value: t.id,
-    label: t.name
-  }))}
-  onChange={selectedOptions => {
-    const teacherIds = selectedOptions.map(opt => opt.value);
-    setNewCourse({ ...newCourse, teacher_ids: teacherIds });
-  }}
-  placeholder="Select teacher(s)..."
-/>
+          isMulti
+          options={users.filter(u => u.role === 'teacher').map(t => ({ value: t.id, label: t.name }))}
+          onChange={opts => setNewCourse({ ...newCourse, teacher_ids: opts.map(o => o.value) })}
+          placeholder="Select teacher(s)..."
+        />
         <button onClick={createCourse}>Create Course</button>
       </section>
 
@@ -299,6 +314,7 @@ const AdminDashboard = () => {
               <th>Email</th>
               <th>Role</th>
               <th>Blocked</th>
+              <th>Blocked Until</th>
               <th>Password</th>
               <th>Actions</th>
             </tr>
@@ -310,10 +326,11 @@ const AdminDashboard = () => {
                 <td>{u.email}</td>
                 <td>{u.role}</td>
                 <td>{u.is_blocked ? 'Yes' : 'No'}</td>
+                <td>{u.blocked_until ? new Date(u.blocked_until).toLocaleDateString() : '-'}</td>
                 <td>{u.plaintext_password}</td>
                 <td>
-                  <button onClick={() => toggleBlockUser(u.id, u.is_blocked)}>
-                    {u.is_blocked ? 'Unblock' : 'Block'}
+                  <button onClick={() => toggleBlockUser(u.id, u.is_blocked, u.blocked_until)}>
+                    {u.is_blocked ? 'Unblock/Extend' : 'Block'}
                   </button>
                   <button onClick={() => deleteUser(u.id)}>Delete</button>
                 </td>
@@ -339,10 +356,13 @@ const AdminDashboard = () => {
               <tr key={c.id}>
                 <td>{c.title}</td>
                 <td>{c.description}</td>
-                <td>{(c.course_teachers || []).map(ct => ct.users?.name).filter(Boolean).join(', ') || 'N/A'}</td>
                 <td>
-                  <button onClick={() => deleteCourse(c.id)}>Delete</button>
+                  {(c.course_teachers || [])
+                    .map(ct => ct.users?.name)
+                    .filter(Boolean)
+                    .join(', ') || 'N/A'}
                 </td>
+                <td><button onClick={() => deleteCourse(c.id)}>Delete</button></td>
               </tr>
             ))}
           </tbody>
